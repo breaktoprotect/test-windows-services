@@ -1,0 +1,7 @@
+Service Name,Display Name,Default Setting,Recommendation,Justification,References
+AJRouter,AllJoyn Router Service,Manual,Disable,AllJoyn is an old IoT framework rarely used in enterprise servers. Disabling reduces potential attack surface.,"Microsoft Docs, CIS Benchmark"
+CaptureService_XXXX,Capture Service,Manual,Disable,"Supports optional screen capture functionality, not required for server operation, adds attack surface.","Microsoft Docs, DISA STIG"
+ConsentUxUserSvc_XXXX,Consent UX Service,Manual,Disable,Provides UI for device access consent; unnecessary for server workloads. Disabling mitigates risk.,"Microsoft Docs, Microsoft Security Baseline"
+CDPUserSvc_XXXX,Connected Devices Platform User Service,Manual,Disable,Enables cross-device experiences like Bluetooth and IoT connectivity. Not needed on servers.,"Microsoft Docs, CIS Benchmark"
+CredentialEnrollmentManagerUserSvc_XXXX,Credential Enrollment Manager,Manual,Leave Default,Handles device credential enrollment and hybrid identity. Essential for authentication flows.,"Microsoft Docs, Microsoft Security Baseline"
+SensorService,Sensor Service,Manual,Disable,"Interfaces with hardware sensors like GPS; not relevant for servers, adds unnecessary risk.","Microsoft Docs, DISA STIG"
