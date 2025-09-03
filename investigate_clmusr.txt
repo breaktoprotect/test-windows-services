@@ -85,7 +85,6 @@ WDAGUtilityAccount False   A user account managed and used by the system for Win
 
 PS C:\Users\js> Get-LocalUser CLIUSR | Format-List *
 
-
 AccountExpires         :
 Description            : Failover Cluster Local Identity
 Enabled                : True
@@ -104,7 +103,6 @@ ObjectClass            : User
 
 
 PS C:\Users\js> Get-LocalUser CLMUSR | Format-List *
-
 
 AccountExpires         :
 Description            : Failover Cluster Local Identity
@@ -144,6 +142,16 @@ See log %windir%\security\logs\scesrv.log for detail info.
 PS C:\Users\js> Select-String -Path C:\secpol.cfg -Pattern "CLIUSR"
 
 C:\secpol.cfg:116:SeDenyInteractiveLogonRight = CLIUSR
+C:\secpol.cfg:120:SeDenyRemoteInteractiveLogonRight = CLIUSR
+
+PS C:\Users\js> Select-String -Path C:\secpol.cfg -Pattern "LogonRight"
+
+C:\secpol.cfg:94:SeNetworkLogonRight = *S-1-1-0,*S-1-5-32-544,*S-1-5-32-545,*S-1-5-32-551
+C:\secpol.cfg:105:SeBatchLogonRight = *S-1-5-32-544,*S-1-5-32-551,*S-1-5-32-559
+C:\secpol.cfg:106:SeServiceLogonRight = *S-1-5-80-0,*S-1-5-99-0
+C:\secpol.cfg:107:SeInteractiveLogonRight = *S-1-5-32-544,*S-1-5-32-545,*S-1-5-32-551
+C:\secpol.cfg:116:SeDenyInteractiveLogonRight = CLIUSR
+C:\secpol.cfg:119:SeRemoteInteractiveLogonRight = *S-1-5-32-544,*S-1-5-32-555
 C:\secpol.cfg:120:SeDenyRemoteInteractiveLogonRight = CLIUSR
 
 
@@ -229,13 +237,13 @@ Because of membership in Hyper-V Administrators and lack of deny logon rights, a
 Risk Position Paper: Cluster Service Accounts (CLIUSR and CLMUSR) in Windows Server 2025
 1. Background
 
-As part of SOX Access Lifecycle Management (ALM) review, we investigated the existence and behavior of two accounts created by Windows Server 2025 Failover Clustering:
+As part of a security governance review, we investigated the existence and behavior of two accounts created by Windows Server 2025 Failover Clustering:
 
 CLIUSR (documented by Microsoft)
 
 CLMUSR (undocumented, observed in lab testing)
 
-The goal was to determine whether these accounts require ALM onboarding or may be treated as exempt service identities.
+The goal was to determine whether these accounts should be treated as exempt system identities or require additional governance controls.
 
 2. Investigation Findings
 CLIUSR
@@ -258,43 +266,66 @@ Provisioning: Auto-created alongside CLIUSR when a cluster is formed.
 
 Group Membership: Member of Users and Hyper-V Administrators.
 
-Logon Rights: No deny logon restrictions set.
+Logon Rights:
 
-Password Management: Cluster-generated and inaccessible to administrators (runas confirms password is not obtainable).
+No explicit deny logon restrictions.
+
+Because it is in Users, it inherits interactive console logon rights (SeInteractiveLogonRight).
+
+Remote logon (SeRemoteInteractiveLogonRight) is not granted, as CLMUSR is not in Remote Desktop Users.
+
+Password Management: Cluster-generated and inaccessible to administrators (runas fails, password is system-controlled).
 
 Usage: Not referenced in cluster resource parameters but logged on at cluster creation, indicating backend service use.
 
-Assessment: CLMUSR has elevated rights (via Hyper-V Administrators) and lacks explicit deny-interactive policy. Although its password is cluster-managed and effectively blocks direct human login, its privilege level introduces potential risk if compromised.
+Assessment: CLMUSR has elevated rights (via Hyper-V Administrators) and retains theoretical interactive capability due to inherited logon rights. In practice, it is blocked because the password is never disclosed, but the combination of logon capability + elevated group membership increases residual risk.
 
 3. Risk-Based Analysis
 
-CLIUSR: Safe to exempt from SOX ALM. Functionally equivalent to NT AUTHORITY\SYSTEM or Local Service. Covered by SOC monitoring.
-
-CLMUSR: Riskier due to group membership and absence of deny logon restrictions. In practice, still non-usable interactively because credentials are not known. Risk lies in hypothetical OS/service compromise where CLMUSR token could be hijacked.
-
-4. Recommended Next Steps
-
 CLIUSR
-
-Document as cluster service identity.
-
-Mark exempt from ALM, continue SOC anomaly monitoring.
+Safe to treat as an exempt system service identity. Functionally equivalent to NT AUTHORITY\SYSTEM or Local Service. Covered by monitoring for abnormal use.
 
 CLMUSR
 
-Two possible risk positions:
+Risk Factors:
 
-Conservative (Strict ALM): Bring CLMUSR under ALM scope due to elevated privileges.
+Member of Hyper-V Administrators (sensitive platform control).
 
-Practical (Risk-Justified Exemption): Exempt with justification: password inaccessible, OS-managed, service-only usage, covered by SOC detection.
+Inherits SeInteractiveLogonRight via Users group, unlike CLIUSR which is explicitly denied.
 
-Action: Escalate to governance body (e.g., SOX controls committee) for a decision on ALM treatment.
+No known password exposure mitigates interactive misuse, but credential theft/token hijacking scenarios remain possible.
+
+Residual Risk: Medium. While practically non-usable interactively, its technical privileges and rights inheritance justify stronger scrutiny.
+
+4. Recommended Next Steps
+CLIUSR
+
+Document as a system-managed cluster service identity.
+
+Mark as governance-exempt, continue SOC monitoring for abnormal use.
+
+CLMUSR
+
+Two possible governance positions:
+
+Conservative (Strict Governance): Apply additional controls due to inherited logon rights and elevated group membership.
+
+Practical (Risk-Justified Exemption): Exempt with justification:
+
+Password inaccessible to admins.
+
+OS-managed, created and removed with cluster lifecycle.
+
+No interactive use possible without credential compromise.
+
+Covered by SOC monitoring.
+
+Action: Escalate to governance/risk committee for decision on how to classify CLMUSR.
 
 5. Conclusion
 
-CLIUSR: Low risk, service-only → Exempt from ALM.
+CLIUSR: Low risk, service-only → Exempt from governance controls.
 
-CLMUSR: Medium risk due to privileges but still effectively service-only. Requires formal risk acceptance if exempted.
+CLMUSR: Medium risk due to Hyper-V Administrators membership and inherited interactive logon rights. Effectively service-only, but requires formal governance decision if exempted.
 
-This position allows compliance and operations teams to align on whether CLMUSR should be handled as an exceptional service account (with compensating SOC controls) or included in full ALM.
-
+This position allows security governance stakeholders to align on whether CLMUSR should be handled as an exceptional system account (with compensating SOC monitoring) or require stricter governance controls.
