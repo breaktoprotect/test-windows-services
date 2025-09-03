@@ -1,0 +1,300 @@
+Fresh install state of WS2025 Standard:
+PS C:\Users\js> Get-LocalUser
+
+Name               Enabled Description
+----               ------- -----------
+Administrator      True    Built-in account for administering the computer/domain
+DefaultAccount     False   A user account managed by the system.
+Guest              False   Built-in account for guest access to the computer/domain
+js                 True
+WDAGUtilityAccount False   A user account managed and used by the system for Windows Defender Application Guard scen...
+
+
+PS C:\Users\js> Get-LocalGroup
+Name                                Description
+----                                -----------
+Access Control Assistance Operators Members of this group can remotely query authorization attributes and permission...
+Administrators                      Administrators have complete and unrestricted access to the computer/domain
+Backup Operators                    Backup Operators can override security restrictions for the sole purpose of back...
+Certificate Service DCOM Access     Members of this group are allowed to connect to Certification Authorities in the...
+Cryptographic Operators             Members are authorized to perform cryptographic operations.
+Device Owners                       Members of this group can change system-wide settings.
+Distributed COM Users               Members are allowed to launch, activate and use Distributed COM objects on this ...
+Event Log Readers                   Members of this group can read event logs from local machine
+Guests                              Guests have the same access as members of the Users group by default, except for...
+Hyper-V Administrators              Members of this group have complete and unrestricted access to all features of H...
+IIS_IUSRS                           Built-in group used by Internet Information Services.
+Network Configuration Operators     Members in this group can have some administrative privileges to manage configur...
+OpenSSH Users                       Members of this group may connect to this computer using SSH.
+Performance Log Users               Members of this group may schedule logging of performance counters, enable trace...
+Performance Monitor Users           Members of this group can access performance counter data locally and remotely
+Power Users                         Power Users are included for backwards compatibility and possess limited adminis...
+Print Operators                     Members can administer printers installed on domain controllers
+RDS Endpoint Servers                Servers in this group run virtual machines and host sessions where users RemoteA...
+RDS Management Servers              Servers in this group can perform routine administrative actions on servers runn...
+RDS Remote Access Servers           Servers in this group enable users of RemoteApp programs and personal virtual de...
+Remote Desktop Users                Members in this group are granted the right to logon remotely
+Remote Management Users             Members of this group can access WMI resources over management protocols (such a...
+Replicator                          Supports file replication in a domain
+Storage Replica Administrators      Members of this group have complete and unrestricted access to all features of S...
+System Managed Accounts Group       Members of this group are managed by the system.
+User Mode Hardware Operators        Members of this group may operate hardware from user mode.
+Users                               Users are prevented from making accidental or intentional system-wide changes an...
+
+PS C:\Users\js> Install-WindowsFeature -Name Failover-Clustering -IncludeManagementTools
+
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    Yes            SuccessRest... {Failover Clustering, Remote Server Admini...
+WARNING: You must restart this server to finish the installation process.
+
+After restart, still no CLIUSR or CLMUSR
+
+
+# Variables
+$ClusterName = "TestCluster01"
+$ClusterNode = $env:COMPUTERNAME
+$ClusterIP   = "192.168.44.200"   # must be unused in 192.168.44.0/24
+
+# Create single-node cluster
+New-Cluster -Name $ClusterName -Node $ClusterNode -StaticAddress $ClusterIP -NoStorage
+
+
+WARNING: There were issues while creating the clustered role that may prevent it from starting. For more information
+view the report file below.
+WARNING: Report file location: C:\WINDOWS\cluster\Reports\Create Cluster Wizard TestCluster01 on 2025.09.03 At
+14.12.28.htm
+
+Name
+----
+TestCluster01
+
+
+PS C:\Users\js> get-localuser
+
+Name               Enabled Description
+----               ------- -----------
+Administrator      True    Built-in account for administering the computer/domain
+CLIUSR             True    Failover Cluster Local Identity
+CLMUSR             True    Failover Cluster Local Identity
+DefaultAccount     False   A user account managed by the system.
+Guest              False   Built-in account for guest access to the computer/domain
+js                 True
+WDAGUtilityAccount False   A user account managed and used by the system for Windows Defender Application Guard scen...
+
+
+PS C:\Users\js> Get-LocalUser CLIUSR | Format-List *
+
+
+AccountExpires         :
+Description            : Failover Cluster Local Identity
+Enabled                : True
+FullName               : CLIUSR
+PasswordChangeableDate : 9/3/2025 2:12:39 PM
+PasswordExpires        :
+UserMayChangePassword  : False
+PasswordRequired       : True
+PasswordLastSet        : 9/3/2025 2:12:39 PM
+LastLogon              : 9/3/2025 2:12:41 PM
+Name                   : CLIUSR
+SID                    : S-1-5-21-1792539398-2590614879-3344303397-1001
+PrincipalSource        : Local
+ObjectClass            : User
+
+
+
+PS C:\Users\js> Get-LocalUser CLMUSR | Format-List *
+
+
+AccountExpires         :
+Description            : Failover Cluster Local Identity
+Enabled                : True
+FullName               : CLMUSR
+PasswordChangeableDate : 9/3/2025 2:12:39 PM
+PasswordExpires        :
+UserMayChangePassword  : False
+PasswordRequired       : True
+PasswordLastSet        : 9/3/2025 2:12:39 PM
+LastLogon              : 9/3/2025 2:12:39 PM
+Name                   : CLMUSR
+SID                    : S-1-5-21-1792539398-2590614879-3344303397-1002
+PrincipalSource        : Local
+ObjectClass            : User
+
+
+
+PS C:\Users\js> Get-LocalGroup | ForEach-Object {
+>>     $g = $_.Name
+>>     Get-LocalGroupMember -Group $g -ErrorAction SilentlyContinue |
+>>         Where-Object Name -match "CL[IM]USR" |
+>>         Select-Object @{n="Group";e={$g}}, Name, ObjectClass
+>> }
+
+Group                  Name                   ObjectClass
+-----                  ----                   -----------
+Hyper-V Administrators WIN-2R3SCMREF8M\CLMUSR User
+Users                  WIN-2R3SCMREF8M\CLIUSR User
+Users                  WIN-2R3SCMREF8M\CLMUSR User
+
+
+PS C:\Users\js> secedit /export /cfg C:\secpol.cfg
+
+The task has completed successfully.
+See log %windir%\security\logs\scesrv.log for detail info.
+PS C:\Users\js> Select-String -Path C:\secpol.cfg -Pattern "CLIUSR"
+
+C:\secpol.cfg:116:SeDenyInteractiveLogonRight = CLIUSR
+C:\secpol.cfg:120:SeDenyRemoteInteractiveLogonRight = CLIUSR
+
+
+PS C:\Users\js> Select-String -Path C:\secpol.cfg -Pattern "CLMUSR"
+PS C:\Users\js>
+
+PS C:\Users\js> gpresult /r | Select-String "CLMUSR"
+PS C:\Users\js>
+
+PS C:\Users\js> runas /user:.\CLMUSR cmd.exe
+Enter the password for .\CLMUSR:
+RUNAS ERROR: Unable to acquire user password
+PS C:\Users\js>
+
+PS C:\Users\js> Get-ClusterResource | Get-ClusterParameter | Where-Object { $_.Value -match "CLMUSR" }
+PS C:\Users\js>
+
+
+Summarized evidence collected:
+CLIUSR
+
+Groups: only in Users.
+
+Logon rights:
+
+SeDenyInteractiveLogonRight
+
+SeDenyRemoteInteractiveLogonRight
+→ explicitly non-interactive.
+
+Cluster binding: not needed, but we know it’s the default documented identity.
+
+Password: cluster-managed, no human knowledge.
+
+Conclusion: CLIUSR is a pure service identity, zero risk of manual login. Exempt from SOX ALM.
+
+CLMUSR
+
+Groups: in Users and Hyper-V Administrators.
+
+Logon rights:
+
+No explicit deny rights found.
+
+Not granted interactive rights either — just not denied.
+
+Password: cluster-managed, unknown to any admin. runas fails (password inaccessible).
+
+Cluster binding: not directly referenced in resource parameters, but provisioned automatically with cluster.
+
+Conclusion:
+
+Technically capable of interactivity (no deny entries in SecPol).
+
+Practically blocked because:
+
+Password is generated and controlled by cluster service.
+
+No admin ever has access to it.
+
+Membership in Hyper-V Administrators is the real concern — gives it elevated platform-level control if somehow compromised.
+
+🔒 ALM / Cybersecurity Posture
+
+CLIUSR →
+Treat as exempt: OS-managed service identity, non-interactive by policy.
+Covered by SOC monitoring for abnormal events.
+
+CLMUSR →
+Options for your firm:
+
+Exempt (with justification):
+
+“Cluster-provisioned local service identity, password not human-accessible, no interactive use possible.”
+
+SOC continues to monitor.
+
+In-scope for ALM:
+
+Because of membership in Hyper-V Administrators and lack of deny logon rights, a strict auditor may demand ALM coverage.
+
+----------
+Risk Position Paper: Cluster Service Accounts (CLIUSR and CLMUSR) in Windows Server 2025
+1. Background
+
+As part of SOX Access Lifecycle Management (ALM) review, we investigated the existence and behavior of two accounts created by Windows Server 2025 Failover Clustering:
+
+CLIUSR (documented by Microsoft)
+
+CLMUSR (undocumented, observed in lab testing)
+
+The goal was to determine whether these accounts require ALM onboarding or may be treated as exempt service identities.
+
+2. Investigation Findings
+CLIUSR
+
+Provisioning: Auto-created when a node joins a cluster.
+
+Group Membership: Limited to Users.
+
+Logon Rights: Explicitly denied local and remote interactive logon (SeDenyInteractiveLogonRight, SeDenyRemoteInteractiveLogonRight).
+
+Password Management: Cluster-generated and inaccessible to administrators.
+
+Usage: Bound exclusively to cluster service authentication.
+
+Assessment: CLIUSR is a non-interactive service account. Risk of misuse is minimal.
+
+CLMUSR
+
+Provisioning: Auto-created alongside CLIUSR when a cluster is formed.
+
+Group Membership: Member of Users and Hyper-V Administrators.
+
+Logon Rights: No deny logon restrictions set.
+
+Password Management: Cluster-generated and inaccessible to administrators (runas confirms password is not obtainable).
+
+Usage: Not referenced in cluster resource parameters but logged on at cluster creation, indicating backend service use.
+
+Assessment: CLMUSR has elevated rights (via Hyper-V Administrators) and lacks explicit deny-interactive policy. Although its password is cluster-managed and effectively blocks direct human login, its privilege level introduces potential risk if compromised.
+
+3. Risk-Based Analysis
+
+CLIUSR: Safe to exempt from SOX ALM. Functionally equivalent to NT AUTHORITY\SYSTEM or Local Service. Covered by SOC monitoring.
+
+CLMUSR: Riskier due to group membership and absence of deny logon restrictions. In practice, still non-usable interactively because credentials are not known. Risk lies in hypothetical OS/service compromise where CLMUSR token could be hijacked.
+
+4. Recommended Next Steps
+
+CLIUSR
+
+Document as cluster service identity.
+
+Mark exempt from ALM, continue SOC anomaly monitoring.
+
+CLMUSR
+
+Two possible risk positions:
+
+Conservative (Strict ALM): Bring CLMUSR under ALM scope due to elevated privileges.
+
+Practical (Risk-Justified Exemption): Exempt with justification: password inaccessible, OS-managed, service-only usage, covered by SOC detection.
+
+Action: Escalate to governance body (e.g., SOX controls committee) for a decision on ALM treatment.
+
+5. Conclusion
+
+CLIUSR: Low risk, service-only → Exempt from ALM.
+
+CLMUSR: Medium risk due to privileges but still effectively service-only. Requires formal risk acceptance if exempted.
+
+This position allows compliance and operations teams to align on whether CLMUSR should be handled as an exceptional service account (with compensating SOC controls) or included in full ALM.
+
