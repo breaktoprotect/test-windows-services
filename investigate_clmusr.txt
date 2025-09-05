@@ -282,20 +282,23 @@ Assessment: CLMUSR has elevated rights (via Hyper-V Administrators) and retains 
 
 3. Risk-Based Analysis
 
-CLIUSR
-Safe to treat as an exempt system service identity. Functionally equivalent to NT AUTHORITY\SYSTEM or Local Service. Covered by monitoring for abnormal use.
+What we know (lab):
 
-CLMUSR
+CLIUSR: local, created at cluster formation; in Users; explicitly denied interactive & remote-interactive logon (SeDenyInteractiveLogonRight, SeDenyRemoteInteractiveLogonRight); password system-managed.
 
-Risk Factors:
+CLMUSR: local, created alongside CLIUSR; in Users and Hyper-V Administrators; not explicitly denied interactive/remote-interactive logon → inherits console logon right via Users; not in Remote Desktop Users; password system-managed (runas fails).
 
-Member of Hyper-V Administrators (sensitive platform control).
+Threats: credential/token theft; group-membership drift; any interactive/RDP use if credentials become exposed.
 
-Inherits SeInteractiveLogonRight via Users group, unlike CLIUSR which is explicitly denied.
+Impact: host/platform control via Hyper-V Admins; possible lateral movement/persistence.
 
-No known password exposure mitigates interactive misuse, but credential theft/token hijacking scenarios remain possible.
+Likelihood modifiers: passwords are OS-generated and undisclosed; no RDP group; standard security logging available.
 
-Residual Risk: Medium. While practically non-usable interactively, its technical privileges and rights inheritance justify stronger scrutiny.
+Residual exposure (as-is):
+
+CLIUSR: Low (non-interactive by policy, low privilege).
+
+CLMUSR: Medium-low (password not human-known, but elevated group + inherited console logon right exist in policy).
 
 4. Recommended Next Steps
 CLIUSR
