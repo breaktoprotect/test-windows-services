@@ -161,6 +161,14 @@ PS C:\Users\js>
 PS C:\Users\js> gpresult /r | Select-String "CLMUSR"
 PS C:\Users\js>
 
+# CLIUSR RUNAS
+PS C:\Users\js> runas /user:cliusr notepad.exe
+Enter the password for cliusr:
+Attempting to start notepad.exe as user "WIN-2R3SCMREF8M\cliusr" ...
+RUNAS ERROR: Unable to run - notepad.exe
+1385: Logon failure: the user has not been granted the requested logon type at this computer.
+
+# CLMUSR RUNAS
 PS C:\Users\js> runas /user:.\CLMUSR cmd.exe
 Enter the password for .\CLMUSR:
 RUNAS ERROR: Unable to acquire user password
@@ -172,10 +180,10 @@ PS C:\Users\js>
 # Attempting to change password successfully but still would not allow interactive use `RUNAS` 
 PS C:\Users\js> Set-LocalUser -Name "CLMUSR" -Password (Read-Host -AsSecureString "Enter new password")
 Enter new password: **********
-PS C:\Users\js> runas /user:.\CLMUSR cmd.exe
-Enter the password for .\CLMUSR:
-RUNAS ERROR: Unable to acquire user password
-PS C:\Users\js>
+PS C:\Users\js> runas /user:clmusr notepad.exe
+Enter the password for clmusr:
+Attempting to start notepad.exe as user "WIN-2R3SCMREF8M\clmusr" ...
+# Notepad.exe was launched successfully.
 
 
 Summarized evidence collected:
