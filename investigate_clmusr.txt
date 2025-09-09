@@ -169,6 +169,14 @@ PS C:\Users\js>
 PS C:\Users\js> Get-ClusterResource | Get-ClusterParameter | Where-Object { $_.Value -match "CLMUSR" }
 PS C:\Users\js>
 
+# Attempting to change password successfully but still would not allow interactive use `RUNAS` 
+PS C:\Users\js> Set-LocalUser -Name "CLMUSR" -Password (Read-Host -AsSecureString "Enter new password")
+Enter new password: **********
+PS C:\Users\js> runas /user:.\CLMUSR cmd.exe
+Enter the password for .\CLMUSR:
+RUNAS ERROR: Unable to acquire user password
+PS C:\Users\js>
+
 
 Summarized evidence collected:
 CLIUSR
