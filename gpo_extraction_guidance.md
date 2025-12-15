@@ -279,3 +279,143 @@ This ensures:
 ## 8. Implementation Rule (Non-Negotiable)
 
 > If a node does not result in a deterministic, inspectable OS configuration state, it is not a hardening setting.
+
+# Example Output Records
+
+This document provides example output records produced by a GPO XML ingestion pipeline.
+Each record represents **one atomic GPO setting** using the universal output fields.
+
+Universal fields:
+- gpo_id
+- gpo_name
+- domain
+- scope
+- policy_engine
+- setting_key
+- value
+- source_xml_path
+
+---
+
+## Registry-Based Policy (Administrative Templates)
+
+Category:
+- Tier-1 hardening
+- Deterministic
+- Comparable to CIS and Microsoft OSConfig
+
+Example extracted record:
+
+{
+  "gpo_id": "{A1B2C3D4-1111-2222-3333-ABCDEF123456}",
+  "gpo_name": "DC-Hardening-Core",
+  "domain": "example.local",
+  "scope": "Computer",
+  "policy_engine": "RegistryPolicy",
+  "setting_key": "Reg::HKLM\\SYSTEM\\CurrentControlSet\\Services\\NTDS\\Parameters\\IntersiteFailuresAllowed",
+  "value": 1,
+  "source_xml_path": "/GPO/Computer/ExtensionData/RegistrySettings/Registry/Properties[1]"
+}
+
+---
+
+## Advanced Audit Policy
+
+Category:
+- Tier-1 hardening
+- Explicitly defined in CIS benchmarks
+
+Example extracted record:
+
+{
+  "gpo_id": "{A1B2C3D4-1111-2222-3333-ABCDEF123456}",
+  "gpo_name": "DC-Audit-Policy",
+  "domain": "example.local",
+  "scope": "Computer",
+  "policy_engine": "AdvancedAuditPolicy",
+  "setting_key": "Audit::AuditProcessTracking",
+  "value": {
+    "success": true,
+    "failure": true
+  },
+  "source_xml_path": "/GPO/Computer/ExtensionData/Audit[4]"
+}
+
+---
+
+## User Rights Assignment
+
+Category:
+- Tier-1 hardening
+- Privilege assignments defined in CIS benchmarks
+
+Example extracted record:
+
+{
+  "gpo_id": "{A1B2C3D4-1111-2222-3333-ABCDEF123456}",
+  "gpo_name": "DC-User-Rights",
+  "domain": "example.local",
+  "scope": "Computer",
+  "policy_engine": "UserRightsAssignment",
+  "setting_key": "UserRights::SeBackupPrivilege",
+  "value": [
+    "BUILTIN\\Administrators"
+  ],
+  "source_xml_path": "/GPO/Computer/ExtensionData/UserRightsAssignment[2]"
+}
+
+---
+
+## Security Options (Local Policies)
+
+Category:
+- Tier-1 hardening
+- Authentication and directory security behavior
+
+Example extracted record:
+
+{
+  "gpo_id": "{A1B2C3D4-1111-2222-3333-ABCDEF123456}",
+  "gpo_name": "DC-Security-Options",
+  "domain": "example.local",
+  "scope": "Computer",
+  "policy_engine": "SecurityOptions",
+  "setting_key": "SecOpt::Network security: LDAP client signing requirements",
+  "value": "Require signing",
+  "source_xml_path": "/GPO/Computer/ExtensionData/SecurityOption[7]"
+}
+
+---
+
+## Scripts (Startup / Shutdown)
+
+Category:
+- Tier-2 (contextual)
+- Not baseline-comparable
+
+Example extracted record:
+
+{
+  "gpo_id": "{A1B2C3D4-1111-2222-3333-ABCDEF123456}",
+  "gpo_name": "DC-Startup-Scripts",
+  "domain": "example.local",
+  "scope": "Computer",
+  "policy_engine": "Scripts",
+  "setting_key": "Script::Startup::Set-SMB1Audit.ps1",
+  "value": {
+    "type": "Startup",
+    "command": "Set-SMB1Audit.ps1",
+    "order": 1
+  },
+  "source_xml_path": "/GPO/Computer/ExtensionData/Scripts/Script[1]"
+}
+
+---
+
+## Validation Rule
+
+A record is valid if:
+- The enforced setting is identifiable via setting_key
+- The enforced state is represented in value
+- The source XML location is captured in source_xml_path
+
