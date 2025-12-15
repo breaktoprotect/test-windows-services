@@ -305,7 +305,7 @@ Category:
 - Comparable to CIS and Microsoft OSConfig
 
 Example extracted record:
-
+```
 {
   "gpo_id": "{A1B2C3D4-1111-2222-3333-ABCDEF123456}",
   "gpo_name": "DC-Hardening-Core",
@@ -316,7 +316,7 @@ Example extracted record:
   "value": 1,
   "source_xml_path": "/GPO/Computer/ExtensionData/RegistrySettings/Registry/Properties[1]"
 }
-
+```
 ---
 
 ## Advanced Audit Policy
@@ -326,7 +326,7 @@ Category:
 - Explicitly defined in CIS benchmarks
 
 Example extracted record:
-
+```
 {
   "gpo_id": "{A1B2C3D4-1111-2222-3333-ABCDEF123456}",
   "gpo_name": "DC-Audit-Policy",
@@ -340,7 +340,7 @@ Example extracted record:
   },
   "source_xml_path": "/GPO/Computer/ExtensionData/Audit[4]"
 }
-
+```
 ---
 
 ## User Rights Assignment
@@ -350,7 +350,7 @@ Category:
 - Privilege assignments defined in CIS benchmarks
 
 Example extracted record:
-
+```
 {
   "gpo_id": "{A1B2C3D4-1111-2222-3333-ABCDEF123456}",
   "gpo_name": "DC-User-Rights",
@@ -363,7 +363,7 @@ Example extracted record:
   ],
   "source_xml_path": "/GPO/Computer/ExtensionData/UserRightsAssignment[2]"
 }
-
+```
 ---
 
 ## Security Options (Local Policies)
@@ -373,7 +373,7 @@ Category:
 - Authentication and directory security behavior
 
 Example extracted record:
-
+```
 {
   "gpo_id": "{A1B2C3D4-1111-2222-3333-ABCDEF123456}",
   "gpo_name": "DC-Security-Options",
@@ -384,7 +384,7 @@ Example extracted record:
   "value": "Require signing",
   "source_xml_path": "/GPO/Computer/ExtensionData/SecurityOption[7]"
 }
-
+```
 ---
 
 ## Scripts (Startup / Shutdown)
@@ -394,7 +394,7 @@ Category:
 - Not baseline-comparable
 
 Example extracted record:
-
+```
 {
   "gpo_id": "{A1B2C3D4-1111-2222-3333-ABCDEF123456}",
   "gpo_name": "DC-Startup-Scripts",
@@ -409,7 +409,7 @@ Example extracted record:
   },
   "source_xml_path": "/GPO/Computer/ExtensionData/Scripts/Script[1]"
 }
-
+```
 ---
 
 ## Validation Rule
